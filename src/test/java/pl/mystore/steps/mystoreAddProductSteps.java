@@ -12,7 +12,6 @@ import org.openqa.selenium.support.ui.Select;
 
 import java.io.File;
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.List;
 
 
@@ -31,18 +30,34 @@ public class mystoreAddProductSteps {
         driver = new ChromeDriver(options);
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
         driver.manage().window().maximize();
+
         driver.get("https://mystore-testlab.coderslab.pl/index.php?controller=authentication&back=my-account");
         driver.findElement(By.id("field-email")).clear();
         driver.findElement(By.id("field-email")).sendKeys("adam.kowalski@test.com");
+
         driver.findElement(By.id("field-password")).clear();
         driver.findElement(By.id("field-password")).sendKeys("Pa$$word");
+
         driver.findElement(By.id("submit-login")).click();
 
         //throw new io.cucumber.java.PendingException();
     }
 
+    @When("the user selects the {string} and verifies a discount is applied")
+    public void theUserSelectsTheProductAndVerifiesADiscountIsApplied(String product) {
 
-    @When("the user selects the Hummingbird Printed Sweater and verifies a discount is applied")
+        WebElement searchField = driver.findElement(By.cssSelector("input[name='s']"));
+        searchField.sendKeys(product);
+        searchField.submit();
+
+        driver.findElement(By.xpath("//a[@class='thumbnail product-thumbnail']")).click();
+
+        String discounOnPage = driver.findElement(By.className("discount-percentage")).getText().replaceAll("[^\\d]", "");
+        Assertions.assertEquals("20", discounOnPage);
+
+    }
+
+    /*@When("the user selects the Hummingbird Printed Sweater and verifies a discount is applied")
     public void theUserSelectsTheHummingbirdPrintedSweaterAndVerifiesADiscountIsApplied() {
 
         WebElement searchField = driver.findElement(By.cssSelector("input[name='s']"));
@@ -54,22 +69,27 @@ public class mystoreAddProductSteps {
         String discounOnPage = driver.findElement(By.className("discount-percentage")).getText().replaceAll("[^\\d]", "");
         Assertions.assertEquals(discounOnPage, "20");
 
-    }
+    }*/
 
-    @And("the user selects size M")
-    public void theUserSelectsSizeM() {
+    @And("the user selects {string}")
+    public void theUserSelectsSize(String size) {
 
         WebElement dropdown = driver.findElement(By.id("group_1"));
         Select select = new Select(dropdown);
-        select.selectByVisibleText("S");
-
+        select.selectByVisibleText(size);
     }
 
     @And("the user selects {int} pieces")
     public void theUserSelectsPieces(int qty) {
 
-        driver.findElement(By.id("quantity_wanted")).click();
-        WebElement spinUpBtn = driver.findElement(By.xpath("//button[contains(@class, 'bootstrap-touchspin-up')]"));
+        WebElement qtyInput = driver.findElement(By.id("quantity_wanted"));
+
+        String quantity = "\b" + qty + "\ue017";
+        qtyInput.sendKeys(quantity);
+
+        //qtyInput.sendKeys(Keys.ENTER);
+
+        /*WebElement spinUpBtn = driver.findElement(By.xpath("//button[contains(@class, 'bootstrap-touchspin-up')]"));
 
         for (int i = 1; i < qty; i++) {
 
@@ -77,7 +97,7 @@ public class mystoreAddProductSteps {
             driver.manage().timeouts().implicitlyWait(Duration.ofMillis(100));
             spinUpBtn.click();
 
-        }
+        }*/
     }
 
     @And("the user adds the product to cart")
@@ -92,7 +112,6 @@ public class mystoreAddProductSteps {
             System.out.println(message);
             throw new RuntimeException(message);
         }
-
     }
 
     @And("the user proceeds to checkout")
@@ -123,14 +142,13 @@ public class mystoreAddProductSteps {
             pickUpInStore.click();
             confirmBtn.click();
         }
-
     }
 
     @And("the user selects Pay by Check option")
     public void theUserSelectsPayByCheckOption() {
 
        WebElement payByCheck = driver.findElement(By.name("payment-option"));
-        payByCheck.click();
+       payByCheck.click();
 
     }
 
@@ -145,8 +163,19 @@ public class mystoreAddProductSteps {
     @And("the user takes a screenshot of the order confirmation with the total amount")
     public void theUserTakesAScreenshotOfTheOrderConfirmationWithTheTotalAmount() {
 
-        String screenName = "srn" + LocalDateTime.now();
-        String cleanName = screenName.replace(":", "").replace(".", "");
+        // Extract the reference number from the element
+        WebElement referenceElement = driver.findElement(By.id("order-reference-value"));
+        String referenceText = referenceElement.getText();
+        this.expectedReferenceNumber = referenceText.substring(referenceText.length()-9);
+
+        // Extract the amount of EUR from the element
+        this.expectedTotalAmount = driver.findElement(By.cssSelector("tr.total-value td:nth-child(2)")).getText();
+        driver.manage().timeouts().implicitlyWait(Duration.ofMillis(1000));
+
+        /*String screenName = "srn" + LocalDateTime.now();
+        String cleanName = screenName.replace(":", "").replace(".", "");*/
+
+        String cleanName = expectedReferenceNumber;
         String screenPath = "src/test/java/pl/mystore/screenshots/"+cleanName+".png";
 
         File screenshot = ((TakesScreenshot)driver).getScreenshotAs(OutputType.FILE);
@@ -156,15 +185,6 @@ public class mystoreAddProductSteps {
 
     @And("the user navigates to order history and details page")
     public void theUserNavigatesToOrderHistoryAndDetailsPage() {
-
-        // Extract the reference number from the element
-        WebElement referenceElement = driver.findElement(By.id("order-reference-value"));
-        String referenceText = referenceElement.getText();
-        this.expectedReferenceNumber = referenceText.substring(referenceText.length()-9);
-
-        // Extract the amount of EUR from the element
-        this.expectedTotalAmount = driver.findElement(By.cssSelector("tr.total-value td:nth-child(2)")).getText();
-        driver.manage().timeouts().implicitlyWait(Duration.ofMillis(1000));
 
         driver.findElement(By.cssSelector("a.account")).click();
         driver.findElement(By.id("history-link")).click();
@@ -217,4 +237,5 @@ public class mystoreAddProductSteps {
         }
 
     }
+
 }
