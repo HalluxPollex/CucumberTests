@@ -36,5 +36,5 @@ build/
 
 ### Mac OS ###
 .DS_Store
-/src/test/resources/drivers/
 /.idea/
+/src/test/resources/drivers/
